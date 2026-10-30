@@ -1,27 +1,217 @@
+
 <!doctype html>
-<html lang="en">
-  <head>
-    <title>&lt;model-viewer&gt; template</title>
-    <meta charset="utf-8">
-    <meta name="description" content="&lt;model-viewer&gt; template">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link type="text/css" href="./styles.css" rel="stylesheet"/>
-  </head>
-  <body>
-    <!-- <model-viewer> HTML element -->
-    <model-viewer src="1bbc13fbccba4c88935f3f13e5a70093.glb" ar ar-modes="webxr scene-viewer quick-look" camera-controls tone-mapping="neutral" poster="poster.webp" shadow-intensity="0.91" autoplay camera-orbit="3.728deg 79.56deg 370.7m" field-of-view="30deg" exposure="0.95" shadow-softness="0.9">
-      <div class="progress-bar hide" slot="progress-bar">
-          <div class="update-bar"></div>
-      </div>
-      <button slot="ar-button" id="ar-button">
-          View in your space
-      </button>
-      <div id="ar-prompt">
-          <img src="ar_hand_prompt.png">
-      </div>
-    </model-viewer>  
-    <script src="script.js"></script>
-    <!-- Loads <model-viewer> for browsers: -->
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.4.0/model-viewer.min.js"></script>
-  </body>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#faf7f1">
+
+  <title>Форма и движение — интерактивная 3D-галерея</title>
+
+  <link rel="stylesheet" href="./styles.css">
+
+  <script
+    type="module"
+    src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.4.0/model-viewer.min.js">
+  </script>
+
+  <script src="./script.js" defer></script>
+</head>
+
+<body>
+  <div class="page-shell">
+
+    <header class="site-header">
+      <a class="brand" href="#top">
+        <span class="brand-mark">✳</span>
+        Форма <span class="brand-muted">/</span> движение
+      </a>
+
+      <span class="header-label">
+        ИНТЕРАКТИВНАЯ 3D-ГАЛЕРЕЯ
+      </span>
+    </header>
+
+    <main id="top">
+
+      <section class="intro">
+        <span class="eyebrow">
+          <span class="eyebrow-dot"></span>
+          ЦИФРОВОЕ ИСКУССТВО · 3D-ОПЫТ
+        </span>
+
+        <h1>
+          Объём, который<br>
+          <em>оживает.</em>
+        </h1>
+
+        <p>
+          Исследуйте трёхмерную модель со всех сторон.
+          Вращайте, приближайте, запускайте анимацию
+          и открывайте новый взгляд на детали.
+        </p>
+      </section>
+
+      <section class="viewer-card">
+
+        <div class="card-top">
+          <span class="scene-label">
+            <span class="status-dot"></span>
+            ИНТЕРАКТИВНАЯ СЦЕНА
+          </span>
+
+          <span class="scene-count">01 / 01</span>
+        </div>
+
+        <div class="viewer-wrap">
+
+          <model-viewer
+            id="viewer"
+
+            src="1bbc13fbccba4c88935f3f13e5a70093.glb"
+            poster="poster.webp"
+
+            alt="Интерактивная трёхмерная модель"
+
+            ar
+            ar-modes="webxr scene-viewer quick-look"
+
+            camera-controls
+            touch-action="pan-y"
+
+            autoplay
+            auto-rotate
+            rotation-per-second="12deg"
+
+            camera-orbit="3.728deg 79.56deg 370.7m"
+            field-of-view="30deg"
+
+            min-field-of-view="12deg"
+            max-field-of-view="60deg"
+
+            tone-mapping="neutral"
+            exposure="0.95"
+
+            shadow-intensity="0.91"
+            shadow-softness="0.9"
+
+            loading="eager"
+            reveal="auto"
+          >
+
+            <div class="progress-bar" slot="progress-bar">
+              <div class="update-bar"></div>
+            </div>
+
+            <button
+              slot="ar-button"
+              id="ar-button"
+              type="button">
+              ◈ Посмотреть в AR
+            </button>
+
+            <div id="ar-prompt">
+              <img
+                src="ar_hand_prompt.png"
+                alt="Подсказка дополненной реальности">
+            </div>
+
+          </model-viewer>
+
+          <span class="viewer-corner">
+            3D / ИССЛЕДУЙ
+          </span>
+
+          <span class="viewer-hint">
+            ↔ Перетаскивайте модель мышью
+          </span>
+
+          <div id="loadMessage" class="load-message">
+            Загрузка 3D-модели…
+          </div>
+
+        </div>
+
+        <div class="controls">
+
+          <button
+            class="control primary"
+            id="rotateBtn"
+            type="button">
+            ⏸ Остановить вращение
+          </button>
+
+          <button
+            class="control"
+            id="animationBtn"
+            type="button">
+            ⏸ Остановить анимацию
+          </button>
+
+          <button
+            class="control"
+            id="zoomInBtn"
+            type="button">
+            ＋ Приблизить
+          </button>
+
+          <button
+            class="control"
+            id="zoomOutBtn"
+            type="button">
+            − Отдалить
+          </button>
+
+          <button
+            class="control"
+            id="resetBtn"
+            type="button">
+            ↺ Сбросить вид
+          </button>
+
+        </div>
+
+        <p class="model-status" id="modelStatus">
+          Загрузка модели…
+        </p>
+
+      </section>
+
+      <section class="info-grid">
+
+        <article class="info-card">
+          <span class="info-number">01 / ИССЛЕДУЙ</span>
+          <span class="info-symbol">↗</span>
+
+          <h2>Смотри под любым углом</h2>
+
+          <p>
+            Поворачивайте модель и меняйте масштаб,
+            чтобы рассмотреть каждую деталь.
+          </p>
+        </article>
+
+        <article class="info-card accent">
+          <span class="info-number">02 / ОЖИВИ</span>
+          <span class="info-symbol">✳</span>
+
+          <h2>Движение в деталях</h2>
+
+          <p>
+            Запускайте и останавливайте анимацию
+            одним нажатием.
+          </p>
+        </article>
+
+      </section>
+
+    </main>
+
+    <footer class="footer">
+      <span>ФОРМА / ДВИЖЕНИЕ</span>
+      <span>Интерактивный 3D-проект · 2026</span>
+    </footer>
+
+  </div>
+</body>
 </html>

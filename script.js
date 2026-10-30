@@ -1,7 +1,12 @@
 
 'use strict';
 
+/* ===================================
+   ELEMENTS
+=================================== */
+
 const viewer = document.getElementById('viewer');
+const scene = document.getElementById('viewerWrap');
 
 const rotateBtn = document.getElementById('rotateBtn');
 const animationBtn = document.getElementById('animationBtn');
@@ -10,57 +15,61 @@ const zoomInBtn = document.getElementById('zoomInBtn');
 const zoomOutBtn = document.getElementById('zoomOutBtn');
 const resetBtn = document.getElementById('resetBtn');
 
+const pixelBtn = document.getElementById('pixelBtn');
+const glitchBtn = document.getElementById('glitchBtn');
+
+const canvas = document.getElementById('fxCanvas');
+const ctx = canvas.getContext('2d');
+
 const statusText = document.getElementById('modelStatus');
 const loadMessage = document.getElementById('loadMessage');
 
 const progressBar = document.querySelector('.progress-bar');
 const updateBar = document.querySelector('.update-bar');
 
-// Исходные параметры камеры
+/* ===================================
+   INITIAL SETTINGS
+=================================== */
 
 const initialOrbit = '3.728deg 79.56deg 370.7m';
 const initialFov = '30deg';
 
-// Состояния
-
 let rotating = true;
 let animating = true;
-let hasAnimations = false;
-let ready = false;
 
-// Обновление надписей на кнопках
+let ready = false;
+let hasAnimations = false;
+
+let effect = 'none';
+
+let effectTimer = null;
+let rendering = false;
+let effectGeneration = 0;
+
+/* ===================================
+   MODEL CONTROLS
+=================================== */
 
 function updateButtons() {
-
   rotateBtn.textContent = rotating
     ? '⏸ Остановить вращение'
     : '▶ Включить вращение';
-
-  rotateBtn.setAttribute('aria-pressed', String(rotating));
 
   animationBtn.textContent = animating
     ? '⏸ Остановить анимацию'
     : '▶ Запустить анимацию';
 
+  rotateBtn.setAttribute('aria-pressed', String(rotating));
   animationBtn.setAttribute('aria-pressed', String(animating));
 }
 
-// Вращение
-
 rotateBtn.addEventListener('click', () => {
-
   rotating = !rotating;
-
   viewer.autoRotate = rotating;
-
   updateButtons();
-
 });
 
-// Управление анимацией
-
 animationBtn.addEventListener('click', () => {
-
   if (!ready || !hasAnimations) return;
 
   animating = !animating;
@@ -72,13 +81,13 @@ animationBtn.addEventListener('click', () => {
   }
 
   updateButtons();
-
 });
 
-// Масштабирование
+/* ===================================
+   ZOOM
+=================================== */
 
 function zoom(multiplier) {
-
   const current = parseFloat(
     viewer.getAttribute('field-of-view') || initialFov
   );
@@ -92,32 +101,333 @@ function zoom(multiplier) {
     'field-of-view',
     `${next.toFixed(2)}deg`
   );
-
 }
 
-zoomInBtn.addEventListener('click', () => {
-  zoom(0.8);
-});
-
-zoomOutBtn.addEventListener('click', () => {
-  zoom(1.25);
-});
-
-// Сброс положения камеры
+zoomInBtn.addEventListener('click', () => zoom(0.8));
+zoomOutBtn.addEventListener('click', () => zoom(1.25));
 
 resetBtn.addEventListener('click', () => {
-
   viewer.setAttribute('camera-orbit', initialOrbit);
   viewer.setAttribute('field-of-view', initialFov);
-
   viewer.jumpCameraToGoal();
-
 });
 
-// Прогресс загрузки модели
+/* ===================================
+   CANVAS SIZE
+=================================== */
+
+function resizeCanvas() {
+  const rect = viewer.getBoundingClientRect();
+
+  // Ограничиваем разрешение для мобильных
+  const scale = Math.min(
+    window.devicePixelRatio || 1,
+    1.5
+  );
+
+  canvas.width = Math.max(
+    1,
+    Math.round(rect.width * scale)
+  );
+
+  canvas.height = Math.max(
+    1,
+    Math.round(rect.height * scale)
+  );
+}
+
+/* ===================================
+   FRAME CAPTURE
+=================================== */
+
+async function captureFrame() {
+  const url = viewer.toDataURL('image/png');
+
+  if (!url || url === 'data:,') {
+    throw new Error('Пустой кадр');
+  }
+
+  const image = new Image();
+  image.src = url;
+
+  await image.decode();
+
+  return image;
+}
+
+/* ===================================
+   PIXELATE
+=================================== */
+
+const smallCanvas = document.createElement('canvas');
+const smallCtx = smallCanvas.getContext('2d');
+
+function drawPixelate(image) {
+  const w = canvas.width;
+  const h = canvas.height;
+
+  // Размер пикселей
+  const pixelSize = 14;
+
+  smallCanvas.width = Math.max(
+    1,
+    Math.ceil(w / pixelSize)
+  );
+
+  smallCanvas.height = Math.max(
+    1,
+    Math.ceil(h / pixelSize)
+  );
+
+  smallCtx.imageSmoothingEnabled = true;
+
+  smallCtx.clearRect(
+    0, 0,
+    smallCanvas.width,
+    smallCanvas.height
+  );
+
+  smallCtx.drawImage(
+    image,
+    0, 0,
+    smallCanvas.width,
+    smallCanvas.height
+  );
+
+  ctx.imageSmoothingEnabled = false;
+
+  ctx.clearRect(0, 0, w, h);
+
+  ctx.drawImage(
+    smallCanvas,
+    0, 0,
+    smallCanvas.width,
+    smallCanvas.height,
+    0, 0,
+    w, h
+  );
+}
+
+/* ===================================
+   GLITCH
+=================================== */
+
+const tempCanvas = document.createElement('canvas');
+const tempCtx = tempCanvas.getContext('2d');
+
+function drawGlitch(image) {
+  const w = canvas.width;
+  const h = canvas.height;
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.drawImage(image, 0, 0, w, h);
+
+  // Копия кадра
+  tempCanvas.width = w;
+  tempCanvas.height = h;
+
+  tempCtx.drawImage(canvas, 0, 0);
+
+  // Разделение цветовых каналов
+  const source = tempCtx.getImageData(0, 0, w, h);
+  const output = ctx.createImageData(w, h);
+
+  const src = source.data;
+  const dst = output.data;
+
+  const shift = Math.max(
+    2,
+    Math.round(w * 0.007)
+  );
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+
+      const rx = Math.min(w - 1, x + shift);
+      const bx = Math.max(0, x - shift);
+
+      const ri = (y * w + rx) * 4;
+      const bi = (y * w + bx) * 4;
+
+      dst[i] = src[ri];
+      dst[i + 1] = src[i + 1];
+      dst[i + 2] = src[bi + 2];
+      dst[i + 3] = 255;
+    }
+  }
+
+  ctx.putImageData(output, 0, 0);
+
+  // Случайные горизонтальные сдвиги
+  tempCtx.clearRect(0, 0, w, h);
+  tempCtx.drawImage(canvas, 0, 0);
+
+  const strips = 4 + Math.floor(Math.random() * 5);
+
+  for (let i = 0; i < strips; i++) {
+    const y = Math.floor(Math.random() * h);
+
+    const stripHeight = Math.max(
+      2,
+      Math.floor(Math.random() * h * 0.04)
+    );
+
+    const height = Math.min(
+      stripHeight,
+      h - y
+    );
+
+    const offset = Math.round(
+      (Math.random() - 0.5) * w * 0.1
+    );
+
+    ctx.drawImage(
+      tempCanvas,
+      0, y, w, height,
+      offset, y, w, height
+    );
+  }
+
+  // Линии сканирования
+  ctx.fillStyle = 'rgba(0,0,0,0.08)';
+
+  for (let y = 0; y < h; y += 5) {
+    ctx.fillRect(0, y, w, 1);
+  }
+}
+
+/* ===================================
+   EFFECT RENDERING
+=================================== */
+
+async function renderEffect(token) {
+  if (!ready || effect === 'none' || rendering) {
+    return;
+  }
+
+  rendering = true;
+
+  try {
+    const image = await captureFrame();
+
+    if (
+      token !== effectGeneration ||
+      effect === 'none'
+    ) {
+      return;
+    }
+
+    resizeCanvas();
+
+    if (effect === 'pixel') {
+      drawPixelate(image);
+    }
+
+    if (effect === 'glitch') {
+      drawGlitch(image);
+    }
+
+    canvas.classList.add('visible');
+
+  } catch (error) {
+    console.error('Ошибка эффекта:', error);
+
+    if (token === effectGeneration) {
+      stopEffect();
+
+      statusText.textContent =
+        'Не удалось обработать кадр модели в этом браузере.';
+    }
+
+  } finally {
+    rendering = false;
+  }
+}
+
+/* ===================================
+   EFFECT SWITCHING
+=================================== */
+
+function updateEffectButtons() {
+  pixelBtn.classList.toggle(
+    'active',
+    effect === 'pixel'
+  );
+
+  glitchBtn.classList.toggle(
+    'active',
+    effect === 'glitch'
+  );
+
+  pixelBtn.setAttribute(
+    'aria-pressed',
+    String(effect === 'pixel')
+  );
+
+  glitchBtn.setAttribute(
+    'aria-pressed',
+    String(effect === 'glitch')
+  );
+}
+
+function stopEffect() {
+  effectGeneration++;
+
+  if (effectTimer !== null) {
+    clearInterval(effectTimer);
+    effectTimer = null;
+  }
+
+  effect = 'none';
+
+  canvas.classList.remove('visible');
+
+  updateEffectButtons();
+}
+
+function startEffect(next) {
+  if (!ready) {
+    statusText.textContent =
+      'Дождитесь загрузки модели.';
+    return;
+  }
+
+  if (effect === next) {
+    stopEffect();
+    return;
+  }
+
+  stopEffect();
+
+  effect = next;
+
+  updateEffectButtons();
+
+  const token = effectGeneration;
+
+  // Сразу рисуем первый кадр
+  renderEffect(token);
+
+  // Далее обновляем до 10 раз в секунду
+  effectTimer = setInterval(() => {
+    renderEffect(token);
+  }, 100);
+}
+
+pixelBtn.addEventListener('click', () => {
+  startEffect('pixel');
+});
+
+glitchBtn.addEventListener('click', () => {
+  startEffect('glitch');
+});
+
+/* ===================================
+   MODEL LOADING
+=================================== */
 
 viewer.addEventListener('progress', event => {
-
   const progress = event.detail?.totalProgress ?? 0;
 
   updateBar.style.width =
@@ -126,13 +436,9 @@ viewer.addEventListener('progress', event => {
   if (progress >= 1) {
     progressBar.classList.add('hide');
   }
-
 });
 
-// После загрузки модели
-
 viewer.addEventListener('load', () => {
-
   ready = true;
 
   loadMessage.hidden = true;
@@ -145,7 +451,6 @@ viewer.addEventListener('load', () => {
   animationBtn.disabled = !hasAnimations;
 
   if (hasAnimations) {
-
     if (!viewer.animationName) {
       viewer.animationName = animations[0];
     }
@@ -155,203 +460,52 @@ viewer.addEventListener('load', () => {
     }
 
     statusText.textContent =
-      `Модель загружена · Анимаций: ${animations.length} · Управляйте сценой мышью`;
-
+      `Модель загружена · Анимаций: ${animations.length}`;
   } else {
-
     animating = false;
 
     statusText.textContent =
-      'Модель загружена · В файле нет встроенных анимаций';
-
+      'Модель загружена · Встроенных анимаций нет';
   }
 
   updateButtons();
-
 });
 
-// Ошибка загрузки
-
 viewer.addEventListener('error', event => {
-
   loadMessage.hidden = false;
 
   loadMessage.textContent =
-    'Не удалось загрузить модель. Проверьте GLB-файл.';
+    'Не удалось загрузить 3D-модель.';
 
   statusText.textContent =
-    'Ошибка загрузки 3D-модели';
+    'Ошибка загрузки модели';
 
-  console.error('Ошибка model-viewer:', event);
-
+  console.error(event);
 });
 
-// Начальное состояние
+/* ===================================
+   AR AND PAGE EVENTS
+=================================== */
+
+viewer.addEventListener('ar-status', event => {
+  if (event.detail.status === 'session-started') {
+    stopEffect();
+  }
+});
+
+window.addEventListener('pagehide', stopEffect);
+
+window.addEventListener('resize', () => {
+  if (effect !== 'none') {
+    resizeCanvas();
+  }
+});
+
+/* ===================================
+   INITIAL STATE
+=================================== */
 
 animationBtn.disabled = true;
 
 updateButtons();
-
-/* ===== ДОПОЛНИТЕЛЬНЫЕ ЭФФЕКТЫ 3D-СЦЕНЫ ===== */
-
-(function () {
-  const scene = document.querySelector('.viewer-wrap');
-  const model = document.querySelector('model-viewer');
-
-  if (!scene || !model) {
-    console.warn('Область 3D-сцены не найдена');
-    return;
-  }
-
-  // Добавляем стили эффектов, не меняя styles.css
-  const styles = document.createElement('style');
-
-  styles.textContent = `
-    .viewer-wrap {
-      position: relative;
-      isolation: isolate;
-    }
-
-    .fx-button {
-      position: absolute;
-      top: 50%;
-      z-index: 20;
-      transform: translateY(-50%);
-      width: 86px;
-      min-height: 86px;
-      padding: 12px 6px;
-      border: 1px solid #e8e1d8;
-      border-radius: 14px;
-      background: rgba(255,255,255,.94);
-      color: #25344a;
-      font-family: inherit;
-      font-size: 10px;
-      font-weight: 800;
-      cursor: pointer;
-      box-shadow: 0 8px 25px rgba(37,52,74,.09);
-      transition: background .2s, color .2s;
-    }
-
-    .fx-button:hover {
-      background: #f7e7e9;
-    }
-
-    .fx-button.active {
-      background: #25344a;
-      color: white;
-    }
-
-    .fx-left { left: 15px; }
-    .fx-right { right: 15px; }
-
-    .fx-button span {
-      display: block;
-      font-size: 25px;
-      margin-bottom: 7px;
-    }
-
-    .viewer-wrap.fx-pixel model-viewer {
-      filter: contrast(1.6) saturate(1.8);
-    }
-
-    .fx-pixel-overlay {
-      position: absolute;
-      inset: 0;
-      z-index: 4;
-      pointer-events: none;
-      display: none;
-      background:
-        repeating-linear-gradient(
-          90deg,
-          rgba(37,52,74,.12) 0 3px,
-          transparent 3px 12px
-        ),
-        repeating-linear-gradient(
-          0deg,
-          rgba(37,52,74,.12) 0 3px,
-          transparent 3px 12px
-        );
-      background-blend-mode: multiply;
-    }
-
-    .viewer-wrap.fx-pixel .fx-pixel-overlay {
-      display: block;
-    }
-
-    .viewer-wrap.fx-glitch model-viewer {
-      filter:
-        contrast(1.4)
-        saturate(1.9)
-        drop-shadow(5px 0 rgba(255,0,90,.5))
-        drop-shadow(-5px 0 rgba(0,220,255,.5));
-      animation: fx-glitch-shake .16s steps(2) infinite;
-    }
-
-    @keyframes fx-glitch-shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(2px); }
-      50% { transform: translateX(-2px); }
-      75% { transform: translateX(1px); }
-    }
-
-    @media(max-width:650px) {
-      .fx-button {
-        width: 60px;
-        min-height: 68px;
-        font-size: 8px;
-      }
-
-      .fx-button span {
-        font-size: 20px;
-      }
-
-      .fx-left { left: 7px; }
-      .fx-right { right: 7px; }
-    }
-  `;
-
-  document.head.appendChild(styles);
-
-  // Создаём кнопки
-  const pixelButton = document.createElement('button');
-  pixelButton.className = 'fx-button fx-left';
-  pixelButton.innerHTML = '<span>▦</span>PIXELATE';
-  pixelButton.type = 'button';
-
-  const glitchButton = document.createElement('button');
-  glitchButton.className = 'fx-button fx-right';
-  glitchButton.innerHTML = '<span>⚡</span>GLITCH';
-  glitchButton.type = 'button';
-
-  const pixelOverlay = document.createElement('div');
-  pixelOverlay.className = 'fx-pixel-overlay';
-
-  scene.appendChild(pixelOverlay);
-  scene.appendChild(pixelButton);
-  scene.appendChild(glitchButton);
-
-  let current = 'normal';
-
-  function activate(effect) {
-    current = current === effect ? 'normal' : effect;
-
-    scene.classList.toggle('fx-pixel', current === 'pixel');
-    scene.classList.toggle('fx-glitch', current === 'glitch');
-
-    pixelButton.classList.toggle('active', current === 'pixel');
-    glitchButton.classList.toggle('active', current === 'glitch');
-
-    pixelButton.setAttribute(
-      'aria-pressed',
-      String(current === 'pixel')
-    );
-
-    glitchButton.setAttribute(
-      'aria-pressed',
-      String(current === 'glitch')
-    );
-  }
-
-  pixelButton.addEventListener('click', () => activate('pixel'));
-  glitchButton.addEventListener('click', () => activate('glitch'));
-})();
+updateEffectButtons();

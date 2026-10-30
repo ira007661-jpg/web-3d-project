@@ -1,217 +1,240 @@
 
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <meta name="theme-color" content="#faf7f1">
 
-  <title>Форма и движение — интерактивная 3D-галерея</title>
+  <title>Форма и движение — 3D-галерея</title>
 
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=5">
 
   <script
     type="module"
-    src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.4.0/model-viewer.min.js">
+    src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js">
   </script>
 
-  <script src="./script.js" defer></script>
+  <script src="./script.js?v=5" defer></script>
 </head>
 
 <body>
-  <div class="page-shell">
 
-    <header class="site-header">
-      <a class="brand" href="#top">
-        <span class="brand-mark">✳</span>
-        Форма <span class="brand-muted">/</span> движение
-      </a>
+<div class="page-shell">
 
-      <span class="header-label">
-        ИНТЕРАКТИВНАЯ 3D-ГАЛЕРЕЯ
+  <header class="site-header">
+    <a class="brand" href="#top">
+      <span class="brand-mark">✳</span>
+      Форма <span class="brand-muted">/</span> движение
+    </a>
+
+    <span class="header-label">
+      ИНТЕРАКТИВНАЯ 3D-ГАЛЕРЕЯ
+    </span>
+  </header>
+
+  <main id="top">
+
+    <section class="intro">
+      <span class="eyebrow">
+        <span class="eyebrow-dot"></span>
+        ЦИФРОВОЕ ИСКУССТВО · 3D-ОПЫТ
       </span>
-    </header>
 
-    <main id="top">
+      <h1>
+        Объём, который<br>
+        <em>оживает.</em>
+      </h1>
 
-      <section class="intro">
-        <span class="eyebrow">
-          <span class="eyebrow-dot"></span>
-          ЦИФРОВОЕ ИСКУССТВО · 3D-ОПЫТ
+      <p>
+        Исследуйте трёхмерную модель со всех сторон.
+        Вращайте, приближайте, запускайте анимацию
+        и экспериментируйте с цифровыми эффектами.
+      </p>
+    </section>
+
+    <section class="viewer-card">
+
+      <div class="card-top">
+        <span class="scene-label">
+          <span class="status-dot"></span>
+          ИНТЕРАКТИВНАЯ СЦЕНА
         </span>
 
-        <h1>
-          Объём, который<br>
-          <em>оживает.</em>
-        </h1>
+        <span class="scene-count">01 / 01</span>
+      </div>
 
-        <p>
-          Исследуйте трёхмерную модель со всех сторон.
-          Вращайте, приближайте, запускайте анимацию
-          и открывайте новый взгляд на детали.
-        </p>
-      </section>
+      <div class="viewer-wrap" id="viewerWrap">
 
-      <section class="viewer-card">
+        <model-viewer
+          id="viewer"
 
-        <div class="card-top">
-          <span class="scene-label">
-            <span class="status-dot"></span>
-            ИНТЕРАКТИВНАЯ СЦЕНА
-          </span>
+          src="./1bbc13fbccba4c88935f3f13e5a70093.glb"
+          poster="./poster.webp"
 
-          <span class="scene-count">01 / 01</span>
-        </div>
+          alt="Интерактивная трёхмерная модель"
 
-        <div class="viewer-wrap">
+          ar
+          ar-modes="webxr scene-viewer quick-look"
 
-          <model-viewer
-            id="viewer"
+          camera-controls
+          touch-action="pan-y"
 
-            src="1bbc13fbccba4c88935f3f13e5a70093.glb"
-            poster="poster.webp"
+          autoplay
+          auto-rotate
+          rotation-per-second="12deg"
 
-            alt="Интерактивная трёхмерная модель"
+          camera-orbit="3.728deg 79.56deg 370.7m"
+          field-of-view="30deg"
 
-            ar
-            ar-modes="webxr scene-viewer quick-look"
+          min-field-of-view="12deg"
+          max-field-of-view="60deg"
 
-            camera-controls
-            touch-action="pan-y"
+          tone-mapping="neutral"
+          exposure="0.95"
 
-            autoplay
-            auto-rotate
-            rotation-per-second="12deg"
+          shadow-intensity="0.91"
+          shadow-softness="0.9"
 
-            camera-orbit="3.728deg 79.56deg 370.7m"
-            field-of-view="30deg"
+          loading="eager"
+          reveal="auto"
+        >
 
-            min-field-of-view="12deg"
-            max-field-of-view="60deg"
-
-            tone-mapping="neutral"
-            exposure="0.95"
-
-            shadow-intensity="0.91"
-            shadow-softness="0.9"
-
-            loading="eager"
-            reveal="auto"
-          >
-
-            <div class="progress-bar" slot="progress-bar">
-              <div class="update-bar"></div>
-            </div>
-
-            <button
-              slot="ar-button"
-              id="ar-button"
-              type="button">
-              ◈ Посмотреть в AR
-            </button>
-
-            <div id="ar-prompt">
-              <img
-                src="ar_hand_prompt.png"
-                alt="Подсказка дополненной реальности">
-            </div>
-
-          </model-viewer>
-
-          <span class="viewer-corner">
-            3D / ИССЛЕДУЙ
-          </span>
-
-          <span class="viewer-hint">
-            ↔ Перетаскивайте модель мышью
-          </span>
-
-          <div id="loadMessage" class="load-message">
-            Загрузка 3D-модели…
+          <div class="progress-bar" slot="progress-bar">
+            <div class="update-bar"></div>
           </div>
 
+          <button
+            id="ar-button"
+            slot="ar-button"
+            type="button">
+            ◈ Посмотреть в AR
+          </button>
+
+        </model-viewer>
+
+        <!-- Canvas для эффектов -->
+        <canvas
+          id="fxCanvas"
+          class="fx-canvas"
+          aria-hidden="true">
+        </canvas>
+
+        <!-- Боковые кнопки -->
+        <button
+          id="pixelBtn"
+          class="effect-button effect-left"
+          type="button"
+          aria-pressed="false">
+          <span class="effect-symbol">▦</span>
+          <span>PIXELATE</span>
+        </button>
+
+        <button
+          id="glitchBtn"
+          class="effect-button effect-right"
+          type="button"
+          aria-pressed="false">
+          <span class="effect-symbol">⚡</span>
+          <span>GLITCH</span>
+        </button>
+
+        <span class="viewer-corner">
+          3D / ИССЛЕДУЙ
+        </span>
+
+        <span class="viewer-hint">
+          ↔ Перетаскивайте модель мышью
+        </span>
+
+        <div id="loadMessage" class="load-message">
+          Загрузка 3D-модели…
         </div>
 
-        <div class="controls">
+      </div>
 
-          <button
-            class="control primary"
-            id="rotateBtn"
-            type="button">
-            ⏸ Остановить вращение
-          </button>
+      <div class="controls">
 
-          <button
-            class="control"
-            id="animationBtn"
-            type="button">
-            ⏸ Остановить анимацию
-          </button>
+        <button
+          class="control primary"
+          id="rotateBtn"
+          type="button">
+          ⏸ Остановить вращение
+        </button>
 
-          <button
-            class="control"
-            id="zoomInBtn"
-            type="button">
-            ＋ Приблизить
-          </button>
+        <button
+          class="control"
+          id="animationBtn"
+          type="button">
+          ⏸ Остановить анимацию
+        </button>
 
-          <button
-            class="control"
-            id="zoomOutBtn"
-            type="button">
-            − Отдалить
-          </button>
+        <button
+          class="control"
+          id="zoomInBtn"
+          type="button">
+          ＋ Приблизить
+        </button>
 
-          <button
-            class="control"
-            id="resetBtn"
-            type="button">
-            ↺ Сбросить вид
-          </button>
+        <button
+          class="control"
+          id="zoomOutBtn"
+          type="button">
+          − Отдалить
+        </button>
 
-        </div>
+        <button
+          class="control"
+          id="resetBtn"
+          type="button">
+          ↺ Сбросить вид
+        </button>
 
-        <p class="model-status" id="modelStatus">
-          Загрузка модели…
+      </div>
+
+      <p class="model-status" id="modelStatus">
+        Загрузка модели…
+      </p>
+
+    </section>
+
+    <section class="info-grid">
+
+      <article class="info-card">
+        <span class="info-number">01 / ИССЛЕДУЙ</span>
+        <span class="info-symbol">↗</span>
+
+        <h2>Смотри под любым углом</h2>
+
+        <p>
+          Поворачивайте модель и меняйте масштаб,
+          чтобы рассмотреть каждую деталь.
         </p>
+      </article>
 
-      </section>
+      <article class="info-card accent">
+        <span class="info-number">02 / ЭКСПЕРИМЕНТИРУЙ</span>
+        <span class="info-symbol">✳</span>
 
-      <section class="info-grid">
+        <h2>Новый взгляд на 3D</h2>
 
-        <article class="info-card">
-          <span class="info-number">01 / ИССЛЕДУЙ</span>
-          <span class="info-symbol">↗</span>
+        <p>
+          Используйте пикселизацию и глитч,
+          чтобы увидеть модель по-новому.
+        </p>
+      </article>
 
-          <h2>Смотри под любым углом</h2>
+    </section>
 
-          <p>
-            Поворачивайте модель и меняйте масштаб,
-            чтобы рассмотреть каждую деталь.
-          </p>
-        </article>
+  </main>
 
-        <article class="info-card accent">
-          <span class="info-number">02 / ОЖИВИ</span>
-          <span class="info-symbol">✳</span>
+  <footer class="footer">
+    <span>ФОРМА / ДВИЖЕНИЕ</span>
+    <span>Интерактивный 3D-проект · 2026</span>
+  </footer>
 
-          <h2>Движение в деталях</h2>
+</div>
 
-          <p>
-            Запускайте и останавливайте анимацию
-            одним нажатием.
-          </p>
-        </article>
-
-      </section>
-
-    </main>
-
-    <footer class="footer">
-      <span>ФОРМА / ДВИЖЕНИЕ</span>
-      <span>Интерактивный 3D-проект · 2026</span>
-    </footer>
-
-  </div>
 </body>
 </html>
